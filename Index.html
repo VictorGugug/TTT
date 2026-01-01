@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TA1 - New Year Protocol</title>
+<link rel="icon" href="mus/favicon1.png" type="image/png">
+<style>
+  /* ====== CRT / Retro BIOS aesthetic (Mantenido) ====== */
+  :root{
+    --crt-bg:#050505; --crt-fg:#f8e88a; --crt-dim:#9c9056;
+    --crt-warn:#ff4545; --crt-purple:#8A2BE2; --accent:#ffd54a;
+    --box:#141414; --border:#d5b653;
+  }
+  html,body{height:100%; margin:0; background:var(--crt-bg); color:var(--crt-fg);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Courier New", monospace;
+    overflow:hidden;
+  }
+  .scanlines::after{content:""; pointer-events:none; position:fixed; inset:0; background:repeating-linear-gradient( to bottom, rgba(255,255,255,.03), rgba(255,255,255,.03) 1px, transparent 2px, transparent 3px ); mix-blend-mode:overlay; opacity:.25;}
+  .vignette::before{content:""; position:fixed; inset:0; pointer-events:none; box-shadow: inset 0 0 120px 40px #000;}
+  .bezel{border:2px solid var(--border); border-radius:10px; box-shadow:0 0 18px rgba(255,214,74,.15);}  
+  
+  /* ====== PANTALLA COMPLETA FINAL ====== */
+  #celebration {
+    display: none; position: fixed; inset: 0; background: var(--crt-bg); z-index: 9999;
+    flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  }
+  .massive-text {
+    font-size: 6vw; color: var(--crt-warn); text-shadow: 0 0 30px var(--crt-warn);
+    animation: redBlink 0.5s steps(1) infinite;
+  }
+
+  /* ====== LAYOUT CON CUADRO AÑO NUEVO ====== */
+  .app{display:none; height:100%;}
+  .grid{display:grid; grid-template-columns: 1fr; height:100%; padding:12px; box-sizing:border-box;}
+  .playerWrap{display:flex; flex-direction: column; align-items:center; justify-content:center; height:100%;}
+  
+  .player{max-width:850px; width:100%; background:#0c0c0c; padding:18px; border-radius:14px; border:2px solid var(--border);} 
+  
+  /* Contenedor Flex para separar Música de Año Nuevo */
+  .main-content { display: flex; gap: 20px; align-items: flex-start; }
+  .music-side { flex: 2; }
+  
+  /* Cuadro Año Nuevo al lado */
+  .new-year-box {
+    flex: 1; border: 1px dashed var(--border); padding: 15px; 
+    border-radius: 10px; background: rgba(20, 20, 20, 0.8);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 180px; text-align: center;
+  }
+  .ny-label { font-size: 10px; color: var(--crt-dim); text-transform: uppercase; margin-bottom: 10px; }
+  .ny-time { font-size: 22px; color: var(--accent); font-weight: bold; text-shadow: 0 0 8px var(--accent); }
+
+  /* Estilos del reproductor (Mantenidos) */
+  .header{display:flex; gap:16px; align-items:center;}
+  .cover{width:150px; height:150px; object-fit:cover; border-radius:10px; border:2px solid var(--border);}
+  .controls{display:flex; gap:8px; margin-top:10px;}
+  button, .btn{background:transparent; color:var(--crt-fg); border:2px solid var(--border); padding:6px; border-radius:8px; cursor: pointer;}
+  .bar{height:10px; background:#1a1a1a; border:2px solid var(--border); border-radius:8px; margin-top:10px; overflow:hidden;}
+  #bar{height:100%; width:0%; background:var(--accent);}
+  .playlist{margin-top:16px; border-top:2px dashed var(--border); padding-top:10px; max-height:150px; overflow:auto;}
+
+  /* Boot Screen */
+  #boot{position:absolute; inset:12px; padding:16px; background:var(--box); z-index:100;}
+  .blink{animation:blink 1s steps(1) infinite;} @keyframes blink{50%{opacity:0}}
+  @keyframes redblink{50%{opacity:0}}
+</style>
+</head>
+<body class="scanlines vignette">
+
+<div id="celebration">
+  <div class="massive-text">FELIZ AÑO NUEVO MOME</div>
+  <div style="color:var(--accent); margin-top: 20px;">[SISTEMA REINICIADO]</div>
+</div>
+
+<div id="boot" class="bezel">
+  <pre id="bootText"></pre>
+  <div id="pressEnter" class="enter blink">[PRESS ENTER TO START]</div>
+</div>
+
+<div class="app" id="app">
+  <div class="grid">
+    <div class="playerWrap">
+      <div class="player bezel">
+        
+        <div class="main-content">
+          <div class="music-side">
+            <div class="header">
+              <img id="cover" class="cover" src="">
+              <div class="meta">
+                <h2 class="title" id="title">—</h2>
+                <p class="artist" id="artist">—</p>
+                <div class="controls">
+                  <button id="prev">⏮</button>
+                  <button id="play">▶</button>
+                  <button id="pause" style="display:none">⏸</button>
+                  <button id="next">⏭</button>
+                  <button id="loop">↻</button>
+                </div>
+              </div>
+            </div>
+            <div class="bar"><div id="bar"></div></div>
+          </div>
+
+          <div class="new-year-box">
+            <div class="ny-label">New Year Protocol</div>
+            <div class="ny-time" id="countdown">00:00:00:00</div>
+            <div style="font-size: 9px; color: var(--crt-warn); margin-top: 10px;">DIRECTIVE: 2026.INIT</div>
+          </div>
+        </div>
+
+        <div class="playlist" id="playlist"></div>
+        <audio id="audio"></audio>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/******************** LÓGICA AÑO NUEVO ************************/
+const targetTime = new Date("January 1, 2026 00:00:00").getTime();
+
+function updateCountdown() {
+  const now = new Date().getTime();
+  const diff = targetTime - now;
+
+  if (diff <= 0) {
+    document.getElementById('celebration').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    return;
+  }
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+  document.getElementById('countdown').innerHTML = 
+    `${days}d ${hours.toString().padStart(2,'0')}h ${mins.toString().padStart(2,'0')}m ${secs.toString().padStart(2,'0')}s`;
+}
+setInterval(updateCountdown, 1000);
+
+/******************** BOOT SEQUENCE ************************/ 
+const bootText = document.getElementById('bootText');
+const bootScreen = document.getElementById('boot');
+const appScreen = document.getElementById('app');
+let bootStarted = false;
+
+function startBoot(){ 
+  if(bootStarted) return; 
+  bootStarted = true; 
+  document.getElementById('pressEnter').style.display='none';
+  const lines = [
+    '>>> INITIALIZING DDM-04',
+    '>>> SYNCING WITH ATOMIC CLOCK',
+    '>>> NEW YEAR PROTOCOL: ARMED',
+    '>>> SYSTEM ONLINE'
+  ];
+  lines.forEach((ln, i)=> {
+    setTimeout(()=>{ bootText.textContent += ln + "\n"; }, i * 600);
+  });
+  setTimeout(()=>{
+    bootScreen.style.display = 'none';
+    appScreen.style.display = 'grid';
+  }, 3000);
+}
+document.addEventListener('keydown', (e) => { if(e.key === 'Enter') startBoot(); });
+document.addEventListener('click', startBoot);
+
+/******************** PLAYER (Lógica Original) ************************/ 
+const audio = document.getElementById('audio');
+const cover = document.getElementById('cover');
+const titleEl = document.getElementById('title');
+const artistEl = document.getElementById('artist');
+const bar = document.getElementById('bar');
+const playlistEl = document.getElementById('playlist');
+
+const initialPlaylist = [
+  { title: 'Falling with you', artist: 'AJ DiSpirito', src: 'mus/Falling with you.mp3', image: 'mus/Falling with you.jpeg' },
+  { title: 'The HuMaN Gala', artist: 'AJ DiSpirito', src: 'mus/The HuMaN Gala.mp3', image: 'mus/The HuMaN Gala.jpeg' }
+];
+
+let idx = 0;
+
+function load(i){ 
+  idx = i; 
+  const it = initialPlaylist[idx]; 
+  audio.src = it.src; 
+  titleEl.textContent = it.title; 
+  artistEl.textContent = it.artist; 
+  cover.src = it.image;
+  renderList();
+}
+
+function renderList(){
+  playlistEl.innerHTML = '';
+  initialPlaylist.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.style.padding = '5px';
+    d.style.cursor = 'pointer';
+    d.style.borderBottom = '1px solid #222';
+    if(i === idx) d.style.color = 'var(--accent)';
+    d.textContent = s.title;
+    d.onclick = () => load(i);
+    playlistEl.appendChild(d);
+  });
+}
+
+document.getElementById('play').onclick = () => { audio.play(); document.getElementById('play').style.display='none'; document.getElementById('pause').style.display='inline-block'; };
+document.getElementById('pause').onclick = () => { audio.pause(); document.getElementById('pause').style.display='none'; document.getElementById('play').style.display='inline-block'; };
+audio.ontimeupdate = () => { bar.style.width = (audio.currentTime/audio.duration*100) + '%'; };
+
+load(0);
+</script>
+</body>
+</html>
